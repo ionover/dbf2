@@ -15,43 +15,40 @@ import com.linuxense.javadbf.DBFWriter;
 public class ShpDbfConverter {
 
     /**
-     * Конвертирует все поля TIMESTAMP_DBASE7 ('@') в DATE ('D') формата YYYYMMDD.
-     * Исходный файл: parcels_new_1_df2a__7829Polygon.dbf
-     * Результат:        output.dbf
+     * Конвертирует все поля TIMESTAMP_DBASE7 ('@') в DATE ('D') формата YYYYMMDD,
+     * и читает/пишет строки в UTF-8.
+     *
+     * Исходник: parcels_new_1_df2a__7829Polygon.dbf
+     * Результат: output.dbf
      */
     public static void convertTimestampToDate(String inputDbfPath,
                                               String outputDbfPath) throws Exception {
-        // Для shapefile-DBF часто используется CP866; при необходимости меняйте на CP1251 и т.п.
-        Charset charset = Charset.forName("CP866");
+        // Заменили CP866 на UTF-8:
+        Charset charset = Charset.forName("UTF-8");
 
         try (InputStream  inStream = new FileInputStream(inputDbfPath);
              DBFReader    reader   = new DBFReader(inStream, charset);
              FileOutputStream fos   = new FileOutputStream(outputDbfPath)) {
 
-            // 1) Собираем новый список полей, конвертируя TIMESTAMP_DBASE7 → DATE
+            // 1) Новый список полей: TIMESTAMP_DBASE7 → DATE
             List<DBFField> newFields = new ArrayList<>();
             for (int i = 0; i < reader.getFieldCount(); i++) {
                 DBFField oldField = reader.getField(i);
-                DBFDataType type = oldField.getType();
-
-                if (type == DBFDataType.TIMESTAMP_DBASE7) {
-                    // код '@' в исходнике, запись в DATE
+                if (oldField.getType() == DBFDataType.TIMESTAMP_DBASE7) {
                     DBFField df = new DBFField();
                     df.setName(oldField.getName());
                     df.setType(DBFDataType.DATE);
                     newFields.add(df);
                 } else {
-                    // всё остальное — без изменений
                     newFields.add(oldField);
                 }
             }
 
-            // 2) Инициализируем писатель и задаём ему уже скорректированный список полей
+            // 2) Писатель с UTF-8 и обновлёнными полями
             DBFWriter writer = new DBFWriter(fos, charset);
-            writer.setFields(newFields.toArray(new DBFField[0]));  // теперь нет TIMESTAMP_DBASE7 → исключим ошибку :contentReference[oaicite:0]{index=0}
+            writer.setFields(newFields.toArray(new DBFField[0]));
 
-            // 3) Копируем все записи: reader.nextRecord() вернёт java.util.Date для TIMESTAMP_DBASE7,
-            //    writer.addRecord() автоматически запишет это в формате YYYYMMDD в поле DATE.
+            // 3) Копируем записи: Date автоматически → YYYYMMDD
             Object[] row;
             while ((row = reader.nextRecord()) != null) {
                 writer.addRecord(row);
@@ -65,7 +62,7 @@ public class ShpDbfConverter {
         String inputPath  = "parcels_new_1_df2a__7829Polygon.dbf";
         String outputPath = "output.dbf";
 
-        System.out.println("Читаем из: " + inputPath);
+        System.out.println("Читаем из: " + inputPath + " в UTF-8");
         convertTimestampToDate(inputPath, outputPath);
         System.out.println("Готово, записано в: " + outputPath);
     }
