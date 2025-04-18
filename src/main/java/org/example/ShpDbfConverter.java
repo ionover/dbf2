@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,27 +16,26 @@ import com.linuxense.javadbf.DBFWriter;
 public class ShpDbfConverter {
 
     /**
-     * Заменяем все поля TIMESTAMP_DBASE7 ('@') на CHARACTER(10) с форматом dd/MM/yyyy.
+     * Заменяем все поля TIMESTAMP_DBASE7 ('@') на DATE ('D').
      * Чтение/запись в UTF-8.
      */
-    public static void convertTimestampToCharDate(String inputDbfPath,
-                                                  String outputDbfPath) throws Exception {
+    public static void convertTimestampToDateField(String inputDbfPath,
+                                                   String outputDbfPath) throws Exception {
         Charset charset = Charset.forName("UTF-8");
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
         try (InputStream inStream = new FileInputStream(inputDbfPath);
              DBFReader reader = new DBFReader(inStream, charset);
              FileOutputStream fos = new FileOutputStream(outputDbfPath)) {
 
-            // 1) Собираем описание полей
+            // 1) Собираем описание полей, меняя TIMESTAMP на DATE
             List<DBFField> newFields = new ArrayList<>();
             for (int i = 0; i < reader.getFieldCount(); i++) {
                 DBFField old = reader.getField(i);
                 if (old.getType() == DBFDataType.TIMESTAMP_DBASE7) {
                     DBFField fld = new DBFField();
                     fld.setName(old.getName());
-                    fld.setType(DBFDataType.CHARACTER);
-                    fld.setFieldLength(10);          // dd/MM/yyyy
+                    fld.setType(DBFDataType.DATE);
+                    fld.setFieldLength(8);   // фиксированная длина для DATE-поля
                     newFields.add(fld);
                 } else {
                     newFields.add(old);
@@ -48,15 +46,11 @@ public class ShpDbfConverter {
             DBFWriter writer = new DBFWriter(fos, charset);
             writer.setFields(newFields.toArray(new DBFField[0]));
 
-            // 3) Копируем записи, переводя Date → "ddMMyyyy"
+            // 3) Копируем записи — Date остаётся Date
             Object[] row;
             while ((row = reader.nextRecord()) != null) {
-                for (int i = 0; i < row.length; i++) {
-                    if (reader.getField(i).getType() == DBFDataType.TIMESTAMP_DBASE7
-                            && row[i] instanceof Date) {
-                        row[i] = sdf.format((Date) row[i]);
-                    }
-                }
+                // Для полей-конвертеров можно при необходимости обработать null-ы,
+                // но в целом передаём Date напрямую в DATE-поле.
                 writer.addRecord(row);
             }
 
@@ -69,7 +63,7 @@ public class ShpDbfConverter {
         String outputPath = "output.dbf";
 
         System.out.println("Читаем из:  " + inputPath + " (UTF-8)");
-        convertTimestampToCharDate(inputPath, outputPath);
+        convertTimestampToDateField(inputPath, outputPath);
         System.out.println("Готово, записано в: " + outputPath);
     }
 }
