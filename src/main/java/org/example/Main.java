@@ -9,7 +9,7 @@ import com.linuxense.javadbf.DBFDataType;
 
 public class Main {
     public static void main(String[] args) throws Exception {
-        String dbfFile = "parcels_new_1_df2a__7829Polygon.dbf";
+        String dbfFile = "src/main/parcels_new_1_df2a__7829Polygon.dbf";
         try (InputStream in = new FileInputStream(dbfFile)) {
             DBFReader reader = new DBFReader(in);
             for (int i = 0; i < reader.getFieldCount(); i++) {

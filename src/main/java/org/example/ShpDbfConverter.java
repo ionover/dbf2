@@ -17,7 +17,7 @@ import com.linuxense.javadbf.DBFWriter;
 public class ShpDbfConverter {
 
     /**
-     * Заменяем все поля TIMESTAMP_DBASE7 ('@') на CHARACTER(8) с форматом ddMMyyyy.
+     * Заменяем все поля TIMESTAMP_DBASE7 ('@') на CHARACTER(10) с форматом dd/MM/yyyy.
      * Чтение/запись в UTF-8.
      */
     public static void convertTimestampToCharDate(String inputDbfPath,
@@ -37,7 +37,7 @@ public class ShpDbfConverter {
                     DBFField fld = new DBFField();
                     fld.setName(old.getName());
                     fld.setType(DBFDataType.CHARACTER);
-                    fld.setFieldLength(10);          // ddMMyyyy
+                    fld.setFieldLength(10);          // dd/MM/yyyy
                     newFields.add(fld);
                 } else {
                     newFields.add(old);
@@ -65,7 +65,7 @@ public class ShpDbfConverter {
     }
 
     public static void main(String[] args) throws Exception {
-        String inputPath  = "parcels_new_1_df2a__7829Polygon.dbf";
+        String inputPath  = "src/main/parcels_new_1_df2a__7829Polygon.dbf";
         String outputPath = "output.dbf";
 
         System.out.println("Читаем из:  " + inputPath + " (UTF-8)");
